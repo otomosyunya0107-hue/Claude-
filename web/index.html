@@ -1,0 +1,76 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+  <title>Fluid GPU Particles · Audio-Reactive Bloom</title>
+  <link rel="icon" href="data:image/svg+xml,&lt;svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'&gt;&lt;circle cx='8' cy='8' r='6' fill='%2300e5ff'/&gt;&lt;/svg&gt;" />
+  <style>
+    :root { color-scheme: dark; }
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    html, body { background: #05060a; overflow-x: hidden; font-family: system-ui, -apple-system, "Segoe UI", sans-serif; }
+    #scene { position: fixed; inset: 0; width: 100vw; height: 100vh; display: block; }
+
+    /* Lenis needs a scrollable body for the "journey" parameter. */
+    #scroll-space { position: relative; height: 320vh; pointer-events: none; }
+
+    #ui {
+      position: fixed; inset: 0; z-index: 10;
+      display: flex; flex-direction: column; align-items: center; justify-content: center;
+      gap: 22px; text-align: center; padding: 24px;
+      background: radial-gradient(circle at 50% 40%, rgba(20,30,60,0.35), rgba(5,6,10,0.9));
+      backdrop-filter: blur(2px);
+    }
+    #ui h1 {
+      font-size: clamp(26px, 5vw, 56px); font-weight: 700; letter-spacing: 0.5px;
+      background: linear-gradient(90deg, #2e7dff, #00e5ff, #ff2d95);
+      -webkit-background-clip: text; background-clip: text; color: transparent;
+    }
+    #ui p { color: #aab4cc; max-width: 540px; line-height: 1.6; font-size: clamp(13px, 2.4vw, 16px); }
+    .btn-row { display: flex; gap: 14px; flex-wrap: wrap; justify-content: center; }
+    .btn {
+      appearance: none; border: 1px solid rgba(120,160,255,0.4); cursor: pointer;
+      background: rgba(30,45,80,0.5); color: #e8f0ff; padding: 13px 24px; border-radius: 999px;
+      font-size: 15px; font-weight: 600; transition: transform .15s ease, background .2s ease, border-color .2s;
+    }
+    .btn:hover { transform: translateY(-2px); background: rgba(46,125,255,0.35); border-color: #2e7dff; }
+    .btn.primary { background: linear-gradient(90deg, #2e7dff, #00e5ff); color: #04101f; border: none; }
+    #file-label { display: inline-block; }
+    #file-input { display: none; }
+    .hint { position: fixed; bottom: 16px; left: 0; right: 0; text-align: center; color: #56627e; font-size: 12px; z-index: 5; pointer-events: none; }
+  </style>
+</head>
+<body>
+  <canvas id="scene"></canvas>
+  <div id="scroll-space"></div>
+
+  <div id="ui">
+    <h1>Fluid GPU Particles</h1>
+    <p>
+      数万個の粒子を GPGPU で並列更新し、Simplex カールノイズで有機的に流れる流体粒子。
+      音楽の周波数にリングがパルスし、明るい部分だけが Selective Bloom で発光します。
+      <br />Three.js · GSAP · Lenis
+    </p>
+    <div class="btn-row">
+      <button class="btn primary" id="btn-demo">デモを見る（音源なし）</button>
+      <button class="btn" id="btn-mic">マイク入力で連動</button>
+      <label class="btn" id="file-label" for="file-input">音楽ファイルを選択</label>
+      <input type="file" id="file-input" accept="audio/*" />
+    </div>
+  </div>
+
+  <div class="hint">ドラッグで回転 · スクロールで強度変化 · ポインターで粒子を引き寄せ</div>
+
+  <script type="importmap">
+  {
+    "imports": {
+      "three": "./vendor/three/three.module.js",
+      "three/addons/": "./vendor/three/addons/",
+      "gsap": "./vendor/gsap/index.js",
+      "lenis": "./vendor/lenis/lenis.mjs"
+    }
+  }
+  </script>
+  <script type="module" src="./src/main.js"></script>
+</body>
+</html>
