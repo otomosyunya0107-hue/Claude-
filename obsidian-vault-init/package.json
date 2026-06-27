@@ -1,0 +1,38 @@
+{
+  "name": "obsidian-vault-init",
+  "version": "0.1.0",
+  "description": "Obsidian 業務メモリ Vault の初期構造を一発生成する CLI（MVP）",
+  "type": "module",
+  "bin": {
+    "obsidian-vault-init": "dist/cli.js"
+  },
+  "files": [
+    "dist",
+    "README.md"
+  ],
+  "engines": {
+    "node": ">=18"
+  },
+  "scripts": {
+    "build": "tsc -p tsconfig.json",
+    "dev": "node --import tsx src/cli.ts",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "prepublishOnly": "npm run build"
+  },
+  "keywords": [
+    "obsidian",
+    "vault",
+    "claude",
+    "mcp",
+    "scaffold",
+    "cli"
+  ],
+  "license": "MIT",
+  "devDependencies": {
+    "@types/node": "^20.11.0",
+    "tsx": "^4.7.0",
+    "typescript": "^5.4.0",
+    "vitest": "^1.4.0"
+  }
+}
