@@ -6,7 +6,9 @@ readme = "README.md"
 requires-python = ">=3.12"
 # NFR-101 / P0-ETH-06: features 層以下にネットワーク依存を持ち込まない。
 # Phase 1 の依存はローカル解析のみ。実依存は M1〜M4 着手時に固定する。
-dependencies = []
+dependencies = [
+    "pyyaml>=6.0.3",
+]
 
 [project.optional-dependencies]
 # 形態素・感情解析（FEA-101 / FEA-102）。ローカル推論のみ。M4 着手時に固定。
@@ -27,6 +29,7 @@ dev = [
     "mypy",
     "pytest",
     "pytest-cov",
+    "types-pyyaml>=6.0.12.20260724",
 ]
 
 [project.scripts]
@@ -45,6 +48,9 @@ target-version = "py312"
 
 [tool.ruff.lint]
 select = ["E", "F", "I", "UP", "B"]
+
+[tool.ruff.lint.isort]
+known-first-party = ["heatwatch", "tests"]
 
 [tool.mypy]
 python_version = "3.12"

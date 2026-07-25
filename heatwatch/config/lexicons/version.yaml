@@ -1,0 +1,2 @@
+# 辞書全体のバージョン。更新すると feature_version を更新する（FEA-103 / §9.3）。
+lexicon_version: "0.1.0"

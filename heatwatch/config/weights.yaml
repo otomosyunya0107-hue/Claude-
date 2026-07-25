@@ -1,20 +1,20 @@
 # 検知スコアリングの重み（§10.1）。初期値は仮説であり、§12 の遡及評価で校正する。
-# 変更は threshold_version に反映すること（DET-105）。
-threshold_version: "0.0.0-dev"
+# 変更は threshold_version に反映すること（DET-105）。合計は概ね 1.0。
+threshold_version: "0.1.0-initial"
 
 weights:
-  generalization: 0.0        # F-01
-  second_person_blame: 0.0   # F-02
-  contempt_markers: 0.0      # F-03
-  counter_blame: 0.0         # F-04
-  latency_spike: 0.0         # F-05
-  terse_reply: 0.0           # F-06
-  message_velocity: 0.0      # F-08
-  alternation: 0.0           # F-09
-  length_escalation: 0.0     # F-10
-  punctuation_intensity: 0.0 # F-11
-  sentiment_delta: 0.0       # F-12
-  reaction_drop: 0.0         # F-13
+  generalization: 0.12        # F-01
+  second_person_blame: 0.12   # F-02
+  contempt_markers: 0.14      # F-03
+  counter_blame: 0.10         # F-04
+  latency_spike: 0.04         # F-05
+  terse_reply: 0.08           # F-06
+  message_velocity: 0.08      # F-08
+  alternation: 0.05           # F-09
+  length_escalation: 0.05     # F-10
+  punctuation_intensity: 0.06 # F-11
+  sentiment_delta: 0.10       # F-12
+  reaction_drop: 0.06         # F-13
 
 # F-07 repair_attempt はスコアを下げる方向（§9.2）。
-w_repair: 0.0
+w_repair: 0.5

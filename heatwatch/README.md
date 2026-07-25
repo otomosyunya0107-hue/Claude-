@@ -13,19 +13,22 @@ North Star は **Lead Time**（自覚時刻 − 初回アラート時刻）。�
 
 ## ステータス
 
-本リポジトリは要件確定（`docs/requirements.md` v2.0）とプロジェクト骨組みの段階。
-機能実装は §16 のマイルストーン M1〜M7 で進める。M1〜M5 が Phase 1、M5 が
-Go/No-Go 判定点（G-C）。
+Phase 1（M1〜M5）と M6 の P0 部分をローカル完結・オフラインで実装済み。すべて
+合成データでテストする（実データは不要・不使用）。M5 が Go/No-Go 判定点（G-C）。
 
 | M | 内容 | 状態 |
 | --- | --- | --- |
-| M1 | Ingest（エクスポート解析・mojibake 復元・正規化） | 未着手 |
-| M2 | 基盤（SQLite・config・センチネル試験・CI） | 骨組み |
-| M3 | Labeling（ラベリング CLI・二重ラベリング） | 未着手 |
-| M4 | Features（F-01〜F-13・辞書・ベースライン） | 未着手 |
-| M5 | Detector + Eval（スコアリング・Lead Time 評価） | 未着手 |
-| M6 | Notify（OS 通知・禁止語テスト・Kill Switch） | 未着手 |
-| M7 | Realtime（Chrome 拡張・localhost API） | 未着手 |
+| M1 | Ingest（エクスポート解析・mojibake 復元・正規化） | 実装済み |
+| M2 | 基盤（SQLite・config・センチネル試験） | 実装済み |
+| M3 | Labeling（ラベル JSON・時系列分割） | 部分（JSON ローダ・分割。対話 CLI は将来） |
+| M4 | Features（F-01〜F-13・辞書・ベースライン） | 実装済み |
+| M5 | Detector + Eval（スコアリング・Lead Time 評価・レポート） | 実装済み |
+| M6 | Notify（静的テンプレート・禁止語・Kill Switch・静音時間） | P0 部分実装済み（OS 配信含む） |
+| M7 | Realtime（Chrome 拡張・localhost API） | 未着手（G-C 合格を前提 / §14） |
+
+初期重み・閾値（`config/weights.yaml` / `thresholds.yaml`）は仮説であり、
+実データでの校正（§12）で確定する。合成シナリオでは AUC ≈ 0.93 / Lead Time 中央値
++3.2 分 / 誤報 0 を確認しているが、G-C の成否は実データで判定される。
 
 ## セットアップ
 

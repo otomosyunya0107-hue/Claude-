@@ -1,14 +1,18 @@
 # 発火・抑制の閾値（§10.2）。初期値は仮説であり、遡及評価で校正する。
-threshold_version: "0.0.0-dev"
+threshold_version: "0.1.0-initial"
 
 # ヒステリシス（DET-101）。enter > exit。
-enter: 1.0
-exit: 0.8
+enter: 0.45
+exit: 0.33
 min_slope: 0.0
 sustained_ms: 90000          # §10.2
 
 min_msg_count: 6             # §9.4 最小要件
 min_active_features: 2       # 単一特徴で鳴らさない（§10.2, FEA-104）
+# 特徴量を「活性」と見なす正規化値の下限。
+active_feature_level: 0.5
+# Level 3 と見なすスコア下限（Level 2 は enter 以上）。
+level3_score: 0.6
 
 cooldown_min: 90             # DET-102
 daily_max_alerts: 3          # DET-103
