@@ -1,0 +1,18 @@
+# 発火・抑制の閾値（§10.2）。初期値は仮説であり、遡及評価で校正する。
+threshold_version: "0.0.0-dev"
+
+# ヒステリシス（DET-101）。enter > exit。
+enter: 1.0
+exit: 0.8
+min_slope: 0.0
+sustained_ms: 90000          # §10.2
+
+min_msg_count: 6             # §9.4 最小要件
+min_active_features: 2       # 単一特徴で鳴らさない（§10.2, FEA-104）
+
+cooldown_min: 90             # DET-102
+daily_max_alerts: 3          # DET-103
+
+# 静音時間帯（NOT-105）。
+quiet_hours_start: "23:00"
+quiet_hours_end: "08:00"

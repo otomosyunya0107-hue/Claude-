@@ -1,0 +1,31 @@
+# DAT-102: 実データ・派生データ・秘匿設定をリポジトリへ混入させない
+
+# Python
+__pycache__/
+*.pyc
+.venv/
+.mypy_cache/
+.ruff_cache/
+.pytest_cache/
+*.egg-info/
+
+# 環境・秘匿
+.env
+.env.*
+
+# 実データ（DAT-101: リポジトリ配下に置かない前提だが二重で防御）
+heatwatch-data/
+data/
+*.json
+!config/**/*.json
+!tests/fixtures/**/*.json
+!extension/**/*.json
+
+# 派生データ（DAT-103: SQLite は派生データのみ、コミットしない）
+*.sqlite
+*.sqlite3
+*.db
+
+# レポート（§15: reports/ は .gitignore）
+reports/
+!reports/.gitkeep

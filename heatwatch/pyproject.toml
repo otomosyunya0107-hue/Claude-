@@ -1,0 +1,61 @@
+[project]
+name = "heatwatch"
+version = "0.1.0"
+description = "会話ヒート自己検知システム（個人利用 / Instagram DM / ローカル実行）"
+readme = "README.md"
+requires-python = ">=3.12"
+# NFR-101 / P0-ETH-06: features 層以下にネットワーク依存を持ち込まない。
+# Phase 1 の依存はローカル解析のみ。実依存は M1〜M4 着手時に固定する。
+dependencies = []
+
+[project.optional-dependencies]
+# 形態素・感情解析（FEA-101 / FEA-102）。ローカル推論のみ。M4 着手時に固定。
+nlp = [
+    # "sudachipy",
+    # "sudachidict-core",
+    # "oseti",
+]
+# Phase 2（RT-102）。localhost API。G-C 合格まで着手しない。
+realtime = [
+    # "fastapi",
+    # "uvicorn",
+]
+
+[dependency-groups]
+dev = [
+    "ruff",
+    "mypy",
+    "pytest",
+    "pytest-cov",
+]
+
+[project.scripts]
+heatwatch = "heatwatch.cli:main"
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/heatwatch"]
+
+[tool.ruff]
+line-length = 100
+target-version = "py312"
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "UP", "B"]
+
+[tool.mypy]
+python_version = "3.12"
+strict = true
+files = ["src/heatwatch"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+# NFR-104: 再現性のため乱数種を固定するテストを既定とする。
+addopts = "-q"
+
+[tool.coverage.run]
+branch = true
+source = ["heatwatch"]
