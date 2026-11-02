@@ -10,6 +10,7 @@ import { PolishButton } from './PolishButton';
 import { formatDate } from './format';
 import { tombMessage } from './shareImage';
 import { NoteEditor } from '../editor/NoteEditor';
+import { askConfirm } from '../ConfirmHost';
 
 export interface CardHandlers {
   onPolish: (id: string) => void;
@@ -79,8 +80,8 @@ function Menu({ items }: { items: { label: string; onClick: () => void; danger?:
   );
 }
 
-function confirmDelete(onDelete: () => void, message = 'このノートを削除しますか？この操作は取り消せません。') {
-  if (window.confirm(message)) onDelete();
+function confirmDelete(onDelete: () => void, message = 'このノートを削除しますか？この操作は取り消せません。', okLabel = '削除する') {
+  void askConfirm(message, okLabel).then((ok) => ok && onDelete());
 }
 
 function PaperCard({ note, now, onPolish, onEdit, onDelete, onShare }: Props) {
@@ -188,7 +189,7 @@ function StoneCard({ note, onDelete, onShare, celebrate }: Props) {
         <Menu
           items={[
             { label: '画像で切り取る', onClick: () => onShare(note) },
-            { label: '削除する', danger: true, onClick: () => confirmDelete(() => onDelete(note.id), '石碑を砕きますか？この操作は取り消せません。') },
+            { label: '削除する', danger: true, onClick: () => confirmDelete(() => onDelete(note.id), '石碑を砕きますか？この操作は取り消せません。', '砕く') },
           ]}
         />
       </header>

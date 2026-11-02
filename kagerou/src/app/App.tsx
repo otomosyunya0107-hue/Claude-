@@ -9,17 +9,20 @@ import { TimeMachine } from '../components/debug/TimeMachine';
 import { haptic, sound } from '../core/soundEngine';
 import type { NoteEntity } from '../db/types';
 import { db } from '../db/schema';
+import { ConfirmHost, askConfirm } from '../components/ConfirmHost';
 
 const DEBUG_KEY = 'kagerou:debug';
+// 開発時と体験版ビルド（VITE_DEBUG_DEFAULT=1）ではタイムマシンを既定で有効にする
+const DEBUG_DEFAULT = import.meta.env.DEV || import.meta.env.VITE_DEBUG_DEFAULT === '1';
 
 function initialDebug(): boolean {
   try {
     const q = new URLSearchParams(location.search).get('debug');
     if (q === '1') localStorage.setItem(DEBUG_KEY, '1');
     if (q === '0') localStorage.removeItem(DEBUG_KEY);
-    return import.meta.env.DEV || localStorage.getItem(DEBUG_KEY) === '1';
+    return DEBUG_DEFAULT || localStorage.getItem(DEBUG_KEY) === '1';
   } catch {
-    return import.meta.env.DEV;
+    return DEBUG_DEFAULT;
   }
 }
 
@@ -75,7 +78,7 @@ export function App() {
   const toggleMute = () => { sound.setMuted(!muted); setMuted(!muted); };
 
   const resetAll = async () => {
-    if (!window.confirm('すべてのノートと設定を消去して初回状態に戻しますか？')) return;
+    if (!(await askConfirm('すべてのノートと設定を消去して初回状態に戻しますか？', '初期化する'))) return;
     await db.delete();
     location.reload();
   };
@@ -147,6 +150,7 @@ export function App() {
       </AnimatePresence>
 
       {showTM && debug && <TimeMachine offset={time.offset} onChange={(ms) => void time.setDebugOffset(ms)} onClose={() => setShowTM(false)} />}
+      <ConfirmHost />
       {sharing && <ShareModal note={sharing} now={time.now} onClose={() => setSharing(null)} />}
     </div>
   );

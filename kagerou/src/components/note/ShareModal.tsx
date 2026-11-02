@@ -58,7 +58,7 @@ export function ShareModal({ note, now, onClose }: Props) {
         await navigator.share({ files: [file], text: '#Kagerou 読み返さない言葉は、30日で砂に還る。' });
       } else {
         download();
-        setMsg('この端末は画像の共有に対応していないため、ダウンロードしました。');
+        setMsg('この環境では共有メニューを開けないため、ダウンロードを試みました。保存されない場合は画像を長押ししてください。');
       }
     } catch (e) {
       if ((e as DOMException).name !== 'AbortError') setMsg('共有できませんでした。ダウンロードをお試しください。');
@@ -93,7 +93,7 @@ export function ShareModal({ note, now, onClose }: Props) {
         <div className="flex max-h-[55vh] items-center justify-center overflow-hidden rounded-lg bg-black">
           {url ? <img src={url} alt="生成されたシェア画像のプレビュー" className="max-h-[55vh] w-auto" /> : <div className="p-16 text-xs text-dim">生成中…</div>}
         </div>
-        {msg && <p className="mt-2 text-xs text-dim">{msg}</p>}
+        <p className="mt-2 text-xs text-dim">{msg ?? 'うまく保存できないときは、画像を長押しして保存してください。'}</p>
         <div className="mt-4 flex justify-end gap-2 text-sm">
           <button type="button" onClick={download} disabled={!url} className="rounded-lg border border-white/10 px-4 py-2 text-ink hover:bg-white/5 disabled:opacity-30">
             ダウンロード

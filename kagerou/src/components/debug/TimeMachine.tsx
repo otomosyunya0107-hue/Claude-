@@ -12,7 +12,7 @@ const STEPS = [1, 7, 15, 30];
 export function TimeMachine({ offset, onChange, onClose }: Props) {
   const days = offset / DAY_MS;
   return (
-    <div className="fixed inset-x-0 bottom-0 z-40 border-t border-white/10 bg-[#0f1114]/95 px-4 py-3 backdrop-blur" role="region" aria-label="タイムマシン（デバッグ）">
+    <div className="fixed inset-x-0 bottom-0 z-40 border-t border-white/10 bg-[#0f1114]/95 px-4 pt-3 pb-[max(0.75rem,env(safe-area-inset-bottom))] backdrop-blur" role="region" aria-label="タイムマシン（デバッグ）">
       <div className="mx-auto flex max-w-2xl items-center gap-1.5 overflow-x-auto whitespace-nowrap text-xs">
         <span className="mr-1 font-mono text-dim">⏳</span>
         <span className="mr-auto font-mono text-relic" data-testid="time-offset">
