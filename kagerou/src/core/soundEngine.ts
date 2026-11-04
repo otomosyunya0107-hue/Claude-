@@ -123,7 +123,3 @@ class SoundEngine {
 }
 
 export const sound = new SoundEngine();
-
-export function haptic(pattern: number | number[]) {
-  try { navigator.vibrate?.(pattern); } catch { /* 非対応端末 */ }
-}

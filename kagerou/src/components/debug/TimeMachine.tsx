@@ -1,4 +1,4 @@
-/** 検証用タイムトラベル操作バー */
+/** 検証用：時間を進める */
 import { DAY_MS } from '../../core/constants';
 
 interface Props {
@@ -12,28 +12,26 @@ const STEPS = [1, 7, 15, 30];
 export function TimeMachine({ offset, onChange, onClose }: Props) {
   const days = offset / DAY_MS;
   return (
-    <div className="fixed inset-x-0 bottom-0 z-40 border-t border-white/10 bg-[#0f1114]/95 px-4 pt-3 pb-[max(0.75rem,env(safe-area-inset-bottom))] backdrop-blur" role="region" aria-label="タイムマシン（デバッグ）">
-      <div className="mx-auto flex max-w-2xl items-center gap-1.5 overflow-x-auto whitespace-nowrap text-xs">
-        <span className="mr-1 font-mono text-dim">⏳</span>
-        <span className="mr-auto font-mono text-relic" data-testid="time-offset">
-          {days === 0 ? '現在' : `+${Number.isInteger(days) ? days : days.toFixed(2)}日`}
+    <div
+      className="fixed inset-x-0 bottom-0 z-40 border-t border-dust-faint/40 bg-[#100e0c]/95 backdrop-blur"
+      style={{
+        paddingBottom: 'calc(env(safe-area-inset-bottom, 0px) + 10px)',
+        paddingLeft: 'max(16px, env(safe-area-inset-left, 0px))',
+        paddingRight: 'max(16px, env(safe-area-inset-right, 0px))',
+      }}
+      role="region" aria-label="時を進める（検証用）"
+    >
+      <div className="mx-auto flex max-w-xl items-center gap-4 overflow-x-auto whitespace-nowrap pt-2.5 font-mincho text-[12px] tracking-[0.08em] text-dust">
+        <span className="tabular-nums text-[#cfc6b6]" data-testid="time-offset">
+          {days === 0 ? '今日' : `${Number.isInteger(days) ? days : days.toFixed(2)}日後`}
         </span>
         {STEPS.map((d) => (
-          <button
-            key={d}
-            type="button"
-            onClick={() => onChange(offset + d * DAY_MS)}
-            className="rounded-md border border-white/10 px-2.5 py-1.5 font-mono text-ink hover:border-relic/60"
-          >
+          <button key={d} type="button" onClick={() => onChange(offset + d * DAY_MS)} className="py-2 hover:text-[#e6dfd2]">
             +{d}日
           </button>
         ))}
-        <button type="button" onClick={() => onChange(0)} className="rounded-md px-2.5 py-1.5 text-dim hover:text-ink">
-          リセット
-        </button>
-        <button type="button" onClick={onClose} className="rounded-md px-2 py-1.5 text-dim hover:text-ink" aria-label="タイムマシンを閉じる">
-          ✕
-        </button>
+        <button type="button" onClick={() => onChange(0)} className="py-2 text-dust-faint hover:text-[#e6dfd2]">今日に戻る</button>
+        <button type="button" onClick={onClose} className="ml-auto py-2 text-dust-faint hover:text-[#e6dfd2]" aria-label="閉じる">閉じる</button>
       </div>
     </div>
   );

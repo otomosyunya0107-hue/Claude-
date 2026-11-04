@@ -1,0 +1,71 @@
+# カゲロウ Android アプリ（デバッグ署名 APK）をビルドし、プレリリースとして公開する。
+# スマホでリリースページを開き、APK をダウンロードしてインストールできる。
+name: Kagerou Android APK
+
+on:
+  push:
+    branches: [main, claude/kagerou-memo-app-rioxtz]
+    paths: ['kagerou/**', '.github/workflows/kagerou-android.yml']
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: kagerou-android-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  apk:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: kagerou
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: kagerou/package-lock.json
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 21
+
+      - name: Install
+        run: npm ci
+
+      - name: Unit tests
+        run: npm test
+
+      - name: Build web and sync native project
+        run: npm run build && npx cap sync android
+
+      - name: Assemble debug APK
+        working-directory: kagerou/android
+        run: |
+          chmod +x gradlew
+          ./gradlew assembleDebug --no-daemon
+          cp app/build/outputs/apk/debug/app-debug.apk "$GITHUB_WORKSPACE/kagerou-debug.apk"
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: kagerou-debug-apk
+          path: kagerou-debug.apk
+
+      - name: Publish prerelease
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: kagerou-android-${{ github.run_number }}
+          name: カゲロウ Android 試用版 #${{ github.run_number }}
+          target_commitish: ${{ github.sha }}
+          prerelease: true
+          make_latest: false
+          body: |
+            デバッグ署名の試用版 APK です（${{ github.sha }}）。
+            Android 端末でこのページを開き、kagerou-debug.apk をダウンロードしてインストールしてください。
+            初回は「提供元不明のアプリ」のインストール許可が必要です。
+          files: kagerou-debug.apk

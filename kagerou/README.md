@@ -13,6 +13,22 @@ npm test           # 単体テスト（風化エンジン・状態遷移・Index
 npm run e2e        # 受け入れテスト（要 build。Playwright/Chromium を使用）
 ```
 
+## ネイティブアプリ（Capacitor）
+
+`android/` と `ios/` は Capacitor のネイティブプロジェクトです。Web のビルド結果（`dist/`）を同梱して動きます。
+
+```bash
+npm run cap:sync          # Web をビルドして android/ ios/ に反映
+npx cap open android      # Android Studio で開く（実機・エミュレータで実行）
+npx cap open ios          # Xcode で開く（macOS のみ）
+```
+
+- **Android 試用版 APK**: `kagerou/` を push すると GitHub Actions（`.github/workflows/kagerou-android.yml`）がデバッグ署名の APK をビルドし、リポジトリの Releases にプレリリースとして置きます。
+- **iOS**: ビルドと実機インストールには macOS + Xcode が必要です（無料の Apple ID で自分の iPhone に 7 日間有効でインストール可。配布は Apple Developer Program 加入後に TestFlight）。
+- ネイティブ専用処理は `src/platform/native.ts`（触覚＝Haptics、共有＝Filesystem + Share、ステータスバー、Android 戻るボタン）。
+- `appId`（`app.kagerou.memo`）はストア公開後に変更できません。公開前に正式なものへ置き換えてください。
+- アイコン: `node scripts/icons.mjs` で `assets/icon.png` を作り、`npx @capacitor/assets generate --android --ios` で各解像度を生成。
+
 本番ビルドでのタイムマシンは `?debug=1` を付けて開くと有効になります（`?debug=0` で解除）。
 
 ## 構成
@@ -36,3 +52,4 @@ npm run e2e        # 受け入れテスト（要 build。Playwright/Chromium を
 4. **編集は風化の起算点を動かさない**（編集が「無料の手入れ」にならないように）。
 5. **lastKnownTime は実時刻で記録**し、デバッグオフセットは別に加算。タイムマシンのリセットが巻き戻しと誤検知されない。
 6. シェア画像は `html-to-image` を使わず Canvas で直接描画（依存削減）。
+7. **配色・書体（§6.1）**: 仕様の Nord 系トークンから、墨の地・和紙・石・朱印の配色と明朝体（Shippori Mincho を同梱）に変更。紙片の縁・黄ばみ・染みは seed と風化率から決定論的に生成し、墓標は「過去帳」の一覧として表示する。

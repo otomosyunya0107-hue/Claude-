@@ -1,15 +1,17 @@
-import { useCallback, useEffect, useState } from 'react';
-import { AnimatePresence, LayoutGroup } from 'framer-motion';
+import { useCallback, useEffect, useRef, useState } from 'react';
+import { AnimatePresence, LayoutGroup, motion } from 'framer-motion';
 import { useTimeOffset } from '../hooks/useTimeOffset';
 import { useNotes } from '../hooks/useNotes';
 import { NoteEditor } from '../components/editor/NoteEditor';
 import { NoteCard } from '../components/note/NoteCard';
 import { ShareModal } from '../components/note/ShareModal';
 import { TimeMachine } from '../components/debug/TimeMachine';
-import { haptic, sound } from '../core/soundEngine';
+import { sound } from '../core/soundEngine';
+import { haptic, initNative } from '../platform/native';
 import type { NoteEntity } from '../db/types';
 import { db } from '../db/schema';
-import { ConfirmHost, askConfirm } from '../components/ConfirmHost';
+import { ConfirmHost, askConfirm, closeConfirm } from '../components/ConfirmHost';
+import { kanjiNum } from '../core/kanji';
 
 const DEBUG_KEY = 'kagerou:debug';
 // 開発時と体験版ビルド（VITE_DEBUG_DEFAULT=1）ではタイムマシンを既定で有効にする
@@ -36,8 +38,18 @@ export function App() {
   const [celebrateId, setCelebrateId] = useState<string | null>(null);
   const [dissolving, setDissolving] = useState<Set<string>>(new Set());
   const [toast, setToast] = useState<string | null>(null);
+  const sharingRef = useRef(sharing);
+  sharingRef.current = sharing;
 
-  // 目の前で墓標化したノートに砂のエフェクトを出す
+  // Android の戻るボタン: 確認 → 共有シートの順に閉じる
+  useEffect(() => {
+    void initNative(() => {
+      if (closeConfirm()) return true;
+      if (sharingRef.current) { setSharing(null); return true; }
+      return false;
+    });
+  }, []);
+
   useEffect(() => {
     const onDissolve = (e: Event) => {
       const ids = (e as CustomEvent<string[]>).detail;
@@ -59,13 +71,13 @@ export function App() {
       const r = await notes.polish(id);
       if (r.monumented) {
         sound.playMonument();
-        haptic([60, 40, 120]);
+        void haptic('heavy');
         setCelebrateId(id);
-        setToast('石碑に刻まれました。この言葉はもう風化しません。');
+        setToast('石に刻まれました。もう風化しません。');
       } else {
         sound.playPolishComplete();
-        haptic(30);
-        setToast(r.counted ? `手入れしました（${r.note.polishCount}/5）` : '手入れしました（20時間以内の再手入れは回数に数えません）');
+        void haptic('success');
+        setToast(r.counted ? `手入れ ${kanjiNum(r.note.polishCount)}／五` : '手入れしました。二十時間以内の手入れは回数に数えません。');
       }
     } catch (e) {
       setToast(e instanceof Error ? e.message : '手入れできませんでした');
@@ -78,7 +90,7 @@ export function App() {
   const toggleMute = () => { sound.setMuted(!muted); setMuted(!muted); };
 
   const resetAll = async () => {
-    if (!(await askConfirm('すべてのノートと設定を消去して初回状態に戻しますか？', '初期化する'))) return;
+    if (!(await askConfirm('すべての紙片と石碑、過去帳を消して、初めての状態に戻しますか。', '初期化する'))) return;
     await db.delete();
     location.reload();
   };
@@ -87,84 +99,100 @@ export function App() {
   const empty = !notes.loading && notes.living.length + notes.monuments.length + notes.tombs.length === 0;
 
   return (
-    <div className={`mx-auto min-h-screen max-w-2xl px-4 pt-6 ${showTM ? 'pb-28' : 'pb-16'}`}>
-      <header className="mb-6 flex items-start justify-between gap-4">
-        <div>
-          <h1 className="font-mincho text-2xl tracking-[0.25em]">
-            カゲロウ<span className="ml-2 align-middle font-sans text-[11px] tracking-[0.3em] text-dim">KAGEROU</span>
-          </h1>
-          <p className="mt-1 text-xs text-dim">読み返さない言葉は、30日で砂に還る。</p>
-        </div>
-        <div className="flex items-center gap-1 text-dim">
-          {debug && !showTM && (
-            <button type="button" onClick={() => setShowTM(true)} className="rounded-md px-2 py-1 text-sm hover:text-ink" aria-label="タイムマシンを開く">⏳</button>
-          )}
-          <button type="button" onClick={toggleMute} className="rounded-md px-2 py-1 text-sm hover:text-ink" aria-label={muted ? '音を出す' : 'ミュート'} aria-pressed={muted}>
-            {muted ? '🔇' : '🔈'}
+    <div
+      className="mx-auto min-h-screen max-w-xl"
+      style={{
+        paddingLeft: 'max(20px, env(safe-area-inset-left, 0px))',
+        paddingRight: 'max(20px, env(safe-area-inset-right, 0px))',
+        paddingTop: 'calc(env(safe-area-inset-top, 0px) + 28px)',
+        paddingBottom: showTM ? 'calc(env(safe-area-inset-bottom, 0px) + 96px)' : 'calc(env(safe-area-inset-bottom, 0px) + 48px)',
+      }}
+    >
+      <header className="mb-10 flex items-start justify-between gap-4">
+        <h1 className="font-mincho text-[22px] font-semibold tracking-[0.35em] text-[#e6dfd2]">カゲロウ</h1>
+        <nav className="flex items-center gap-5 pt-1 font-mincho text-[12px] tracking-[0.15em] text-dust">
+          {debug && !showTM && <button type="button" onClick={() => setShowTM(true)} className="py-1 hover:text-[#e6dfd2]">時を進める</button>}
+          <button type="button" onClick={toggleMute} aria-pressed={muted} className="py-1 hover:text-[#e6dfd2]">
+            {muted ? '音なし' : '音あり'}
           </button>
-        </div>
+        </nav>
       </header>
 
       {time.rolledBack && (
-        <div role="alert" className="mb-4 rounded-lg border border-rust/40 bg-rust/10 px-3 py-2 text-xs text-rust">
-          端末の時計が巻き戻されたことを検知しました。風化は最後に記録された時刻を基準に計算されます。
-        </div>
+        <p role="alert" className="mb-6 font-mincho text-[12px] leading-relaxed text-shu">
+          端末の時計が巻き戻されています。風化は最後に記録された時刻から数えます。
+        </p>
       )}
 
-      <section className="mb-8 rounded-2xl border border-white/5 bg-paper/60 p-4">
-        <NoteEditor placeholder="いま考えていることを書き留める（1〜1,000文字）" onSubmit={async (c) => { await notes.add(c); }} />
+      <section className="mb-14 border-l border-dust-faint/60 pl-4">
+        <NoteEditor placeholder="いま考えていることを、ここに。" onSubmit={async (c) => { await notes.add(c); }} />
       </section>
 
       <LayoutGroup>
         {notes.living.length > 0 && (
-          <Section title="風化しつつある言葉" count={notes.living.length}>
-            {notes.living.map((n) => <NoteCard key={n.id} note={n} now={time.now} {...handlers} />)}
+          <Section title="紙片" note={`${kanjiNum(notes.living.length)}枚`}>
+            <ul className="space-y-7">
+              <AnimatePresence initial={false}>
+                {notes.living.map((n) => <NoteCard key={n.id} note={n} now={time.now} {...handlers} />)}
+              </AnimatePresence>
+            </ul>
           </Section>
         )}
         {notes.monuments.length > 0 && (
-          <Section title="石碑" count={notes.monuments.length}>
-            {notes.monuments.map((n) => <NoteCard key={n.id} note={n} now={time.now} celebrate={celebrateId === n.id} {...handlers} />)}
+          <Section title="石碑" note={`${kanjiNum(notes.monuments.length)}基`}>
+            <ul className="space-y-8">
+              <AnimatePresence initial={false}>
+                {notes.monuments.map((n) => <NoteCard key={n.id} note={n} now={time.now} celebrate={celebrateId === n.id} {...handlers} />)}
+              </AnimatePresence>
+            </ul>
           </Section>
         )}
         {notes.tombs.length > 0 && (
-          <Section title="墓標" count={notes.tombs.length}>
-            {notes.tombs.map((n) => <NoteCard key={n.id} note={n} now={time.now} dissolving={dissolving.has(n.id)} {...handlers} />)}
+          <Section title="過去帳" note={`${kanjiNum(notes.tombs.length)}件`}>
+            <ul className="divide-y divide-dust-faint/25 border-y border-dust-faint/25">
+              {notes.tombs.map((n) => <NoteCard key={n.id} note={n} now={time.now} dissolving={dissolving.has(n.id)} {...handlers} />)}
+            </ul>
           </Section>
         )}
       </LayoutGroup>
 
-      {empty && <p className="py-16 text-center text-sm text-dim">まだ何も刻まれていません。</p>}
+      {empty && <p className="py-16 text-center font-mincho text-[13px] text-dust-faint">まだ何も書かれていません。</p>}
 
-      <footer className="mt-12 flex justify-center gap-4 text-[11px] text-dim/60">
-        <span>データはこの端末の中だけに保存されます</span>
-        {debug && <button type="button" onClick={() => void resetAll()} className="underline hover:text-ink">初期化</button>}
-        {!debug && <button type="button" onClick={() => { setDebug(true); setShowTM(true); try { localStorage.setItem(DEBUG_KEY, '1'); } catch { /* noop */ } }} className="opacity-0 focus:opacity-100" aria-label="デバッグモード">·</button>}
+      <footer className="mt-16 flex items-center justify-between font-mincho text-[11px] leading-relaxed text-dust-faint">
+        <span>書いたものは、この端末の中にだけ残ります。</span>
+        {debug ? (
+          <button type="button" onClick={() => void resetAll()} className="py-1 hover:underline">初期化</button>
+        ) : (
+          <button type="button" onClick={() => { setDebug(true); setShowTM(true); try { localStorage.setItem(DEBUG_KEY, '1'); } catch { /* noop */ } }} className="opacity-0 focus:opacity-100" aria-label="検証モード">·</button>
+        )}
       </footer>
 
       <AnimatePresence>
         {toast && (
-          <div className={`pointer-events-none fixed inset-x-0 ${showTM ? 'bottom-20' : 'bottom-6'} z-50 flex justify-center px-4`}>
-            <div role="status" className="rounded-full border border-white/10 bg-[#1b1e24] px-4 py-2 text-xs text-ink shadow-xl">{toast}</div>
-          </div>
+          <motion.div
+            initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }}
+            className="pointer-events-none fixed inset-x-0 z-50 flex justify-center px-5"
+            style={{ bottom: `calc(env(safe-area-inset-bottom, 0px) + ${showTM ? 84 : 24}px)` }}
+          >
+            <p role="status" className="paper px-5 py-2.5 font-mincho text-[13px] tracking-[0.08em] shadow-[0_8px_20px_rgba(0,0,0,0.5)]">{toast}</p>
+          </motion.div>
         )}
       </AnimatePresence>
 
-      {showTM && debug && <TimeMachine offset={time.offset} onChange={(ms) => void time.setDebugOffset(ms)} onClose={() => setShowTM(false)} />}
       <ConfirmHost />
+      {showTM && debug && <TimeMachine offset={time.offset} onChange={(ms) => void time.setDebugOffset(ms)} onClose={() => setShowTM(false)} />}
       {sharing && <ShareModal note={sharing} now={time.now} onClose={() => setSharing(null)} />}
     </div>
   );
 }
 
-function Section({ title, count, children }: { title: string; count: number; children: React.ReactNode }) {
+function Section({ title, note, children }: { title: string; note: string; children: React.ReactNode }) {
   return (
-    <section className="mb-8">
-      <h2 className="mb-3 flex items-baseline gap-2 text-xs tracking-[0.2em] text-dim">
-        {title}<span className="font-mono text-dim/60">{count}</span>
+    <section className="mb-16">
+      <h2 className="mb-6 flex items-baseline gap-3 font-mincho text-[13px] tracking-[0.4em] text-[#cfc6b6]">
+        {title}<span className="text-[11px] tracking-[0.15em] text-dust-faint">{note}</span>
       </h2>
-      <ul className="space-y-3">
-        <AnimatePresence initial={false}>{children}</AnimatePresence>
-      </ul>
+      {children}
     </section>
   );
 }

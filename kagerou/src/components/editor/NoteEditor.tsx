@@ -1,4 +1,4 @@
-/** 新規メモ作成・追記フォーム */
+/** 書き留める欄。新規は墨の地の上に、書き直しは紙片の上に置かれる */
 import { useState } from 'react';
 import { KAGEROU_CONSTANTS as K } from '../../core/constants';
 import { validateContent } from '../../core/stateMachine';
@@ -8,16 +8,18 @@ interface Props {
   submitLabel?: string;
   placeholder?: string;
   autoFocus?: boolean;
+  onPaper?: boolean;
   onSubmit: (content: string) => Promise<void>;
   onCancel?: () => void;
 }
 
-export function NoteEditor({ initial = '', submitLabel = '刻む', placeholder, autoFocus, onSubmit, onCancel }: Props) {
+export function NoteEditor({ initial = '', submitLabel = '書き留める', placeholder, autoFocus, onPaper, onSubmit, onCancel }: Props) {
   const [text, setText] = useState(initial);
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
   const len = Array.from(text).length;
   const over = len > K.MAX_NOTE_LENGTH;
+  const empty = text.trim().length === 0;
 
   const submit = async () => {
     const err = validateContent(text);
@@ -34,37 +36,39 @@ export function NoteEditor({ initial = '', submitLabel = '刻む', placeholder, 
     }
   };
 
+  const fg = onPaper ? 'text-ink placeholder:text-ink/35' : 'text-[#e6dfd2] placeholder:text-dust-faint';
+  const sub = onPaper ? 'text-ink/50' : 'text-dust-faint';
+
   return (
-    <form onSubmit={(e) => { e.preventDefault(); void submit(); }} className="space-y-2">
+    <form onSubmit={(e) => { e.preventDefault(); void submit(); }}>
       <textarea
+        id={onPaper ? 'edit-note' : 'new-note'}
         value={text}
         autoFocus={autoFocus}
         onChange={(e) => { setText(e.target.value); setError(null); }}
         onKeyDown={(e) => { if (e.key === 'Enter' && (e.metaKey || e.ctrlKey)) { e.preventDefault(); void submit(); } }}
         placeholder={placeholder}
-        rows={initial ? Math.min(10, Math.max(3, text.split('\n').length + 1)) : 3}
+        rows={onPaper ? Math.min(12, Math.max(3, text.split('\n').length + 1)) : Math.min(8, Math.max(2, text.split('\n').length))}
         aria-label="メモ本文"
-        className="block w-full resize-y rounded-xl border border-white/10 bg-black/30 px-4 py-3 text-[15px] leading-relaxed text-ink placeholder:text-dim/60 focus:border-moss/50 focus:outline-none"
+        className={`block w-full resize-none border-0 bg-transparent p-0 font-mincho text-[16px] leading-[2] focus:outline-none ${fg}`}
       />
-      <div className="flex items-center justify-between gap-3 text-xs">
-        <span className={over ? 'text-rust' : 'text-dim'} aria-live="polite">
-          {error ?? `${len} / ${K.MAX_NOTE_LENGTH}`}
-        </span>
-        <div className="flex gap-2">
-          {onCancel && (
-            <button type="button" onClick={onCancel} className="rounded-lg px-3 py-2 text-dim hover:text-ink">
-              キャンセル
+      {(!empty || onPaper) && (
+        <div className={`mt-3 flex items-center justify-between gap-3 font-mincho text-[12px] tracking-[0.1em] ${sub}`}>
+          <span className={over || error ? 'text-shu' : ''} aria-live="polite">
+            {error ?? `${len}／${K.MAX_NOTE_LENGTH}字`}
+          </span>
+          <span className="flex items-center gap-5">
+            {onCancel && <button type="button" onClick={onCancel} className="py-2 hover:underline">やめる</button>}
+            <button
+              type="submit"
+              disabled={busy || over || empty}
+              className={`py-2 tracking-[0.2em] disabled:opacity-30 ${onPaper ? 'text-ink' : 'text-[#e6dfd2]'} border-b ${onPaper ? 'border-ink/40' : 'border-[#e6dfd2]/50'}`}
+            >
+              {submitLabel}
             </button>
-          )}
-          <button
-            type="submit"
-            disabled={busy || over || text.trim().length === 0}
-            className="rounded-lg bg-ink px-4 py-2 font-medium text-void transition hover:bg-white disabled:opacity-30"
-          >
-            {submitLabel}
-          </button>
+          </span>
         </div>
-      </div>
+      )}
     </form>
   );
 }

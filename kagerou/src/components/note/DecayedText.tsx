@@ -6,7 +6,7 @@ const STYLE: Record<CharState, string> = {
   INTACT: '',
   BLURRED: 'blur-[1.2px] opacity-65 select-none',
   FADING: 'blur-[0.5px] opacity-30 translate-y-[1px] inline-block select-none',
-  ERODED: 'opacity-25 text-neutral-600 select-none',
+  ERODED: 'text-ink-faded opacity-55 select-none', // 紙の上で読める程度の残り滓
 };
 
 interface Props {
@@ -34,7 +34,7 @@ function DecayedTextImpl({ content, seed, rVisual, className = '' }: Props) {
   }, [chars, thresholds, seed, rVisual]);
 
   return (
-    <p className={`whitespace-pre-wrap break-words leading-relaxed ${className}`}>
+    <p data-testid="note-text" className={`whitespace-pre-wrap break-words leading-relaxed ${className}`}>
       {runs.map((r, i) =>
         r.state === 'INTACT' ? (
           <span key={i}>{r.text}</span>

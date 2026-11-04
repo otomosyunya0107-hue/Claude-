@@ -1,24 +1,22 @@
-/** 長押し充填（Hold to Polish）インタラクション（仕様書 §5.2） */
+/** 長押し充填（Hold to Polish）。紙片の下端に沿って苔色の線が伸びる */
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { KAGEROU_CONSTANTS as K } from '../../core/constants';
 import { sound } from '../../core/soundEngine';
+import { haptic } from '../../platform/native';
 
 interface Props {
   onProgress: (p: number) => void;
   onComplete: () => void;
   disabled?: boolean;
-  label?: string;
 }
 
-const R = 20;
-const CIRC = 2 * Math.PI * R;
-
-export function PolishButton({ onProgress, onComplete, disabled, label = '手入れする' }: Props) {
+export function PolishButton({ onProgress, onComplete, disabled }: Props) {
   const [p, setP] = useState(0);
   const raf = useRef<number | null>(null);
   const start = useRef(0);
   const sweep = useRef<ReturnType<typeof sound.startSweep> | null>(null);
   const done = useRef(false);
+  const ticks = useRef(0);
 
   const set = useCallback((v: number) => { setP(v); onProgress(v); }, [onProgress]);
 
@@ -33,12 +31,17 @@ export function PolishButton({ onProgress, onComplete, disabled, label = '手入
   const begin = useCallback(() => {
     if (disabled || raf.current !== null) return;
     done.current = false;
+    ticks.current = 0;
     start.current = performance.now();
     sweep.current = sound.startSweep();
+    void haptic('light');
     const step = (t: number) => {
       const v = Math.min(1, (t - start.current) / K.HOLD_DURATION_MS);
       set(v);
       sweep.current?.update(v);
+      // 進捗 25% ごとに軽い手応え
+      const tick = Math.floor(v * 4);
+      if (tick > ticks.current && v < 1) { ticks.current = tick; void haptic('light'); }
       if (v >= 1) {
         done.current = true;
         raf.current = null;
@@ -59,8 +62,8 @@ export function PolishButton({ onProgress, onComplete, disabled, label = '手入
     <button
       type="button"
       disabled={disabled}
-      aria-label={`${label}（長押し）`}
-      className="group relative flex shrink-0 whitespace-nowrap select-none touch-none items-center gap-2 rounded-full border border-moss/40 bg-black/30 py-1.5 pl-1.5 pr-4 text-sm text-moss transition hover:border-moss/80 active:scale-[0.98] disabled:opacity-40"
+      aria-label="手入れする（長押し）"
+      className="relative shrink-0 touch-none select-none whitespace-nowrap py-2 pl-3 font-mincho text-[13px] tracking-[0.12em] text-ink disabled:opacity-40"
       onPointerDown={(e) => { e.currentTarget.setPointerCapture?.(e.pointerId); begin(); }}
       onPointerUp={cancel}
       onPointerCancel={cancel}
@@ -70,14 +73,9 @@ export function PolishButton({ onProgress, onComplete, disabled, label = '手入
       onKeyUp={(e) => { if (e.key === ' ' || e.key === 'Enter') cancel(); }}
       onBlur={cancel}
     >
-      <svg width="34" height="34" viewBox="0 0 48 48" aria-hidden className="-rotate-90">
-        <circle cx="24" cy="24" r={R} fill="none" stroke="currentColor" strokeOpacity="0.2" strokeWidth="4" />
-        <circle
-          cx="24" cy="24" r={R} fill="none" stroke="currentColor" strokeWidth="4" strokeLinecap="round"
-          strokeDasharray={CIRC} strokeDashoffset={CIRC * (1 - p)} className="hold-ring"
-        />
-      </svg>
-      <span>{p > 0 ? '砂を払っています…' : label}</span>
+      {p > 0 ? '払っています' : '長押しで手入れ'}
+      <span aria-hidden className="absolute bottom-1 left-3 right-0 h-px bg-ink/25" />
+      <span aria-hidden className="absolute bottom-1 left-3 h-[2px] bg-moss" style={{ width: `calc((100% - 0.75rem) * ${p})` }} />
     </button>
   );
 }

@@ -1,65 +1,100 @@
 @import "tailwindcss";
+@import "@fontsource/shippori-mincho/400.css";
+@import "@fontsource/shippori-mincho/600.css";
 
-/* カラートークン（仕様書 §6.1, Dark Mode Default） */
+/*
+ * Layout: 墨の地に、和紙の紙片が一枚ずつ置かれている。石碑は石柱、墓標は過去帳の一行。
+ * 単一の見た目（暗い地）で統一するネイティブアプリなので、ライト/ダーク切替は持たない。
+ */
 :root {
-  --bg-void: #0b0c0e;
-  --surface-paper: #16181d;
-  --surface-stone: #1f242d;
-  --surface-tomb: transparent;
-  --text-ink: #e5e9f0;
-  --accent-moss: #a3be8c;
-  --accent-rust: #bf616a;
-  --accent-relic: #88c0d0;
-  --line-stone: #4c566a;
-  --line-tomb: #2a2e37;
-  --text-dim: #8b93a3;
+  /* 地 */
+  --sumi: #151311;          /* 墨の地（暖色寄りの黒） */
+  --sumi-raised: #1d1a17;   /* 入力欄・シート */
+  --dust: #9a9184;          /* 地の上の文字（灰土色） */
+  --dust-faint: #5f584f;
+  /* 紙 */
+  --washi: #ebe5d8;         /* 書いたばかりの和紙 */
+  --washi-aged: #c9b996;    /* 風化して黄ばんだ和紙 */
+  --ink: #1e1b17;           /* 墨書き */
+  --ink-faded: #7b705f;     /* 欠落した字の残り（紙の上） */
+  /* 石 */
+  --stone: #3b3c3a;
+  --stone-carve: #232422;
+  --stone-light: #6c6d69;
+  /* 意味色 */
+  --moss: #8a9763;          /* 手入れ（苔） */
+  --shu: #9b3f2c;           /* 朱印（消滅間近） */
+
+  --font-mincho: "Shippori Mincho", "Hiragino Mincho ProN", "Yu Mincho", "Noto Serif CJK JP", serif;
+  --font-ui: "Hiragino Sans", "Hiragino Kaku Gothic ProN", "Noto Sans CJK JP", "Yu Gothic UI", system-ui, sans-serif;
   color-scheme: dark;
 }
 
 @theme inline {
-  --color-void: var(--bg-void);
-  --color-paper: var(--surface-paper);
-  --color-stone: var(--surface-stone);
-  --color-ink: var(--text-ink);
-  --color-moss: var(--accent-moss);
-  --color-rust: var(--accent-rust);
-  --color-relic: var(--accent-relic);
-  --color-stoneline: var(--line-stone);
-  --color-tombline: var(--line-tomb);
-  --color-dim: var(--text-dim);
-  --font-sans: "Hiragino Sans", "Hiragino Kaku Gothic ProN", "Noto Sans JP", "Yu Gothic UI", "Meiryo", system-ui, sans-serif;
-  --font-mincho: "Hiragino Mincho ProN", "Yu Mincho", "YuMincho", "Noto Serif JP", "Noto Serif CJK JP", serif;
+  --color-sumi: var(--sumi);
+  --color-sumi-raised: var(--sumi-raised);
+  --color-dust: var(--dust);
+  --color-dust-faint: var(--dust-faint);
+  --color-washi: var(--washi);
+  --color-ink: var(--ink);
+  --color-ink-faded: var(--ink-faded);
+  --color-stone: var(--stone);
+  --color-moss: var(--moss);
+  --color-shu: var(--shu);
+  --font-mincho: var(--font-mincho);
+  --font-ui: var(--font-ui);
 }
 
 html, body, #root { min-height: 100%; }
 body {
   margin: 0;
-  background: var(--bg-void);
-  color: var(--text-ink);
-  font-family: var(--font-sans);
+  background: var(--sumi);
+  color: var(--dust);
+  font-family: var(--font-ui);
   -webkit-font-smoothing: antialiased;
   -webkit-tap-highlight-color: transparent;
+  -webkit-touch-callout: none;
   overscroll-behavior-y: none;
 }
+/* 地のざらつき */
+body::after {
+  content: "";
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  z-index: 0;
+  opacity: 0.5;
+  background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='220' height='220'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='0.75' numOctaves='2' stitchTiles='stitch'/><feColorMatrix values='0 0 0 0 0.6  0 0 0 0 0.55  0 0 0 0 0.5  0 0 0 0.05 0'/></filter><rect width='100%' height='100%' filter='url(%23n)'/></svg>");
+}
+#root { position: relative; z-index: 1; }
 
-/* 石碑: 石材テクスチャ（ノイズ + 微妙なグラデーション）と刻印 */
-.stone-surface {
-  background-color: var(--surface-stone);
+:focus-visible { outline: 1px dashed var(--dust); outline-offset: 3px; }
+
+/* 紙片：繊維のテクスチャ。色は JS から --paper で与える */
+.paper {
+  background-color: var(--paper, var(--washi));
   background-image:
-    radial-gradient(120% 80% at 20% 0%, rgba(136, 192, 208, 0.07), transparent 60%),
-    radial-gradient(90% 70% at 100% 100%, rgba(0, 0, 0, 0.35), transparent 70%),
-    url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='160' height='160'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='3' stitchTiles='stitch'/><feColorMatrix values='0 0 0 0 0.55  0 0 0 0 0.6  0 0 0 0 0.68  0 0 0 0.09 0'/></filter><rect width='100%' height='100%' filter='url(%23n)'/></svg>");
-  box-shadow: inset 0 2px 10px rgba(0, 0, 0, 0.55), inset 0 -1px 0 rgba(255, 255, 255, 0.04);
-  border: 1px solid var(--line-stone);
+    var(--stains, none),
+    url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='260' height='260'><filter id='f'><feTurbulence type='fractalNoise' baseFrequency='0.035 0.9' numOctaves='3' seed='4'/><feColorMatrix values='0 0 0 0 0.35  0 0 0 0 0.3  0 0 0 0 0.22  0 0 0 0.10 0'/></filter><rect width='100%' height='100%' filter='url(%23f)'/></svg>");
+  color: var(--ink);
 }
-.engraved {
-  font-family: var(--font-mincho);
-  color: #d8dee9;
-  text-shadow: 0 -1px 0 rgba(0, 0, 0, 0.8), 0 1px 0 rgba(255, 255, 255, 0.08);
-  letter-spacing: 0.04em;
-}
+/* clip-path は影も切り取るので、影は外側の要素に付ける */
+.paper-wrap { filter: drop-shadow(0 1px 0 rgba(0,0,0,0.55)) drop-shadow(0 12px 16px rgba(0,0,0,0.4)); }
 
-.hold-ring { transition: stroke-dashoffset 60ms linear; }
+/* 石柱 */
+.stele {
+  background-color: var(--stone);
+  background-image:
+    radial-gradient(140% 60% at 50% 0%, rgba(255,255,255,0.06), transparent 60%),
+    url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='200' height='200'><filter id='s'><feTurbulence type='fractalNoise' baseFrequency='0.6' numOctaves='4' seed='9'/><feColorMatrix values='0 0 0 0 0.8  0 0 0 0 0.8  0 0 0 0 0.78  0 0 0 0.13 0'/></filter><rect width='100%' height='100%' filter='url(%23s)'/></svg>");
+  border-radius: 46% 46% 3px 3px / 22px 22px 3px 3px;
+  box-shadow: inset 0 -14px 24px rgba(0,0,0,0.35), inset 0 2px 0 rgba(255,255,255,0.05), 0 12px 22px rgba(0,0,0,0.45);
+}
+.carved {
+  font-family: var(--font-mincho);
+  color: var(--stone-carve);
+  text-shadow: 0 1px 0 var(--stone-light), 0 -1px 0 rgba(0,0,0,0.45);
+}
 
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after { animation-duration: 0.01ms !important; transition-duration: 0.01ms !important; }

@@ -28,13 +28,14 @@ const errors = [];
 page.on('pageerror', (e) => errors.push(String(e)));
 page.on('console', (m) => m.type() === 'error' && errors.push(m.text()));
 
-const cardText = (loc) => loc.locator('p').first().evaluate((p) => p.textContent);
+const cardText = (loc) => loc.getByTestId('note-text').evaluate((p) => p.textContent);
 const dbNotes = () => page.evaluate(() => new Promise((res) => {
   const r = indexedDB.open('kagerou');
   r.onsuccess = () => { const tx = r.result.transaction('notes'); const q = tx.objectStore('notes').getAll(); q.onsuccess = () => { res(q.result); r.result.close(); }; };
 }));
 const travel = async (label) => { await page.getByRole('button', { name: label, exact: true }).click(); await page.waitForTimeout(400); };
 const hold = async (btn, ms) => {
+  await btn.scrollIntoViewIfNeeded();
   const box = await btn.boundingBox();
   await page.mouse.move(box.x + box.width / 2, box.y + box.height / 2);
   await page.mouse.down();
@@ -48,12 +49,12 @@ try {
   await page.screenshot({ path: `${OUT}01-onboarding.png`, fullPage: true });
 
   // オンボーディング
-  const statuses = await page.locator('article[data-status]').evaluateAll((els) => els.map((e) => e.dataset.status).sort());
+  const statuses = await page.locator('[data-status]').evaluateAll((els) => els.map((e) => e.dataset.status).sort());
   check('初回起動で 3 件のチュートリアルが投入される', JSON.stringify(statuses) === JSON.stringify(['CRITICAL', 'TOMBSTONE', 'WEATHERING']), statuses.join(','));
 
   // 6. 石碑化（チュートリアル 4/5）
   const reachId = (await dbNotes()).find((n) => n.polishCount === 4 && n.isTutorial)?.id;
-  const reach = page.locator(`article[data-note-id="${reachId}"]`);
+  const reach = page.locator(`[data-note-id="${reachId}"]`);
   if ((await reach.count()) === 0) {
     check('石碑化リーチのノートが存在する', false, '既に墓標化している');
   } else {
@@ -61,33 +62,33 @@ try {
     await page.mouse.up();
     await page.waitForTimeout(1200);
     await page.screenshot({ path: `${OUT}04-monument.png`, fullPage: true });
-    const stone = page.locator('article[data-status="MONUMENT"]');
+    const stone = page.locator('[data-status="MONUMENT"]');
     check('5回目の手入れで石碑（MONUMENT）に昇格する', (await stone.count()) === 1);
     await travel('+30日');
     await travel('+30日');
     await page.screenshot({ path: `${OUT}04b-monument-after-60d.png`, fullPage: true });
-    const stoneText = await page.locator('article[data-status="MONUMENT"] p.engraved').textContent();
+    const stoneText = await page.locator('[data-status="MONUMENT"] p.engraved').textContent();
     const stoneDb = (await dbNotes()).find((n) => n.id === reachId);
     check('石碑は +60日進めても一切風化しない', stoneText.includes('5回手入れされた言葉だけは') && stoneDb.status === 'MONUMENT' && stoneDb.content !== null);
   }
-  await page.getByRole('button', { name: 'リセット' }).click();
+  await page.getByRole('button', { name: '今日に戻る' }).click();
   await page.waitForTimeout(300);
 
   // 1. 作成・永続化
   const TEXT = 'きょうは雨がふっていたので、図書館でKagerouの設計を考えた。風化する言葉こそ大切にしたい。';
   await page.getByLabel('メモ本文').first().fill(TEXT);
-  await page.getByRole('button', { name: '刻む' }).click();
+  await page.getByRole('button', { name: '書き留める' }).click();
   await page.waitForTimeout(500);
   await page.reload();
   await page.waitForSelector('[data-status]');
-  const mine = page.locator('article[data-status]').filter({ hasText: '図書館' });
+  const mine = page.locator('[data-status]').filter({ hasText: '図書館' });
   check('新規メモを作成し、リロード後も IndexedDB から復元される', (await mine.count()) === 1 && (await cardText(mine)) === TEXT);
   const myId = (await dbNotes()).find((n) => n.content === TEXT)?.id;
 
   // 2. +15日でひらがな優先の風化
   await travel('+15日');
-  const myCard = () => page.locator(`article[data-note-id="${myId}"]`);
-  const analyze = () => myCard().locator('p').first().evaluate((p, text) => {
+  const myCard = () => page.locator(`[data-note-id="${myId}"]`);
+  const analyze = () => myCard().getByTestId('note-text').evaluate((p, text) => {
     const shown = p.textContent;
     const chars = Array.from(text);
     let hiraLost = 0, hira = 0, kanjiLost = 0, kanji = 0;
@@ -113,7 +114,7 @@ try {
   check('リロードしても虫食い位置が変わらない（決定論的 PRNG）', a.shown === b.shown);
 
   // 4. コピーで元の文章が読めない
-  const copied = await myCard().locator('p').first().evaluate((p) => {
+  const copied = await myCard().getByTestId('note-text').evaluate((p) => {
     const sel = getSelection(); const r = document.createRange(); r.selectNodeContents(p); sel.removeAllRanges(); sel.addRange(r);
     let data = null;
     const on = (e) => { data = e.clipboardData ? null : null; };
@@ -129,7 +130,6 @@ try {
   const btn = myCard().getByRole('button', { name: /手入れする/ });
   await hold(btn, 900);
   const during = await cardText(myCard());
-  await page.screenshot({ path: `${OUT}03-holding.png` });
   await page.mouse.up();
   await page.waitForTimeout(250);
   const after = await cardText(myCard());
@@ -155,21 +155,20 @@ try {
   const all = await dbNotes();
   const mineNow = all.find((n) => n.id === myId);
   check('30日経過した通常ノートは本文が null の墓標になる（IndexedDB 上でも抹消）', mineNow.status === 'TOMBSTONE' && mineNow.content === null, `status=${mineNow.status}, content=${mineNow.content}`);
-  const tombText = await page.locator('article[data-status="TOMBSTONE"]').first().textContent();
+  const tombText = await page.locator('[data-status="TOMBSTONE"]').first().textContent();
   check('墓標ログが表示される', /文字の思考は、30日の時を経て砂に還りました。/.test(tombText));
   await page.screenshot({ path: `${OUT}05-after-60d.png`, fullPage: true });
 
   // シェア画像
-  await page.getByRole('button', { name: 'リセット' }).click();
+  await page.getByRole('button', { name: '今日に戻る' }).click();
   await page.getByLabel('メモ本文').first().fill('シェア画像の確認用に書いた、少し長めの言葉です。三十日の時の流れのなかで、ひらがなから順に砂になっていく。');
-  await page.getByRole('button', { name: '刻む' }).click();
+  await page.getByRole('button', { name: '書き留める' }).click();
   await page.waitForTimeout(400);
   await travel('+15日');
   await travel('+7日');
   const shareId = (await dbNotes()).find((n) => n.content?.startsWith('シェア画像'))?.id;
-  const card = page.locator(`article[data-note-id="${shareId}"]`);
-  await card.getByRole('button', { name: 'メニュー' }).click();
-  await page.getByRole('button', { name: '風化状態を画像で切り取る' }).click();
+  const card = page.locator(`[data-note-id="${shareId}"]`);
+  await card.getByRole('button', { name: '切り取る' }).click();
   const img = page.getByAltText('生成されたシェア画像のプレビュー');
   await img.waitFor();
   const dims = await img.evaluate((i) => new Promise((r) => (i.complete ? r([i.naturalWidth, i.naturalHeight]) : (i.onload = () => r([i.naturalWidth, i.naturalHeight])))));
