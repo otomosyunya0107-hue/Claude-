@@ -11,7 +11,7 @@ createRoot(document.getElementById('root')!).render(
 );
 
 // ネイティブではアプリ本体に同梱されるので Service Worker は不要
-if (import.meta.env.PROD && !isNative && 'serviceWorker' in navigator) {
+if (import.meta.env.PROD && import.meta.env.MODE !== 'single' && !isNative && 'serviceWorker' in navigator) {
   window.addEventListener('load', () => {
     navigator.serviceWorker.register('./sw.js').catch(() => { /* オフライン非対応でも本体は動く */ });
   });

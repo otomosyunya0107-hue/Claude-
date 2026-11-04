@@ -3,7 +3,10 @@
 import { readFileSync, writeFileSync, readdirSync } from 'node:fs';
 const dir = new URL('../dist-single/assets/', import.meta.url);
 const files = readdirSync(dir);
-const css = files.filter((f) => f.endsWith('.css')).map((f) => readFileSync(new URL(f, dir), 'utf8')).join('\n');
+// フォントは woff2 を data URI で埋め込み、woff の代替指定は落とす（外部ファイルを置けないため）
+const css = files.filter((f) => f.endsWith('.css')).map((f) => readFileSync(new URL(f, dir), 'utf8')).join('\n')
+  .replace(/,\s*url\(\.\/[^)]+\.woff\)\s*format\("woff"\)/g, '')
+  .replace(/url\(\.\/([^)]+\.woff2)\)/g, (_, f) => `url(data:font/woff2;base64,${readFileSync(new URL(f, dir)).toString('base64')})`);
 const js = files.filter((f) => f.endsWith('.js')).map((f) => readFileSync(new URL(f, dir), 'utf8')).join('\n')
   .replace(/<\/script/gi, '<\\/script');
 const html = `<title>Kagerou カゲロウ</title>
